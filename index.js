@@ -94,7 +94,7 @@ export default function createConfig ({
       break
     case 'default-typescript':
       eslintConfig.extends.push('eslint:recommended')
-      addDependencyAndExtend('@vue/eslint-config-typescript')
+      addDependencyAndExtend('@vue/eslint-config-typescript/recommended')
       break
     case 'airbnb-javascript':
     case 'standard-javascript':
