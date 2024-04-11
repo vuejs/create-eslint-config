@@ -37,6 +37,8 @@
     "kolorist": "^1.8.0"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.0.2",
+    "@eslint/js": "^9.0.0",
     "@rushstack/eslint-patch": "^1.10.1",
     "@vue/eslint-config-airbnb": "^8.0.0",
     "@vue/eslint-config-airbnb-with-typescript": "^8.0.0",

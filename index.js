@@ -52,9 +52,12 @@ export function deepMerge (target, obj) {
 // This is also used in `create-vue`
 export default function createConfig ({
   vueVersion = '3.x', // '2.x' | '3.x' (TODO: 2.7 / vue-demi)
+  configFormat = 'eslintrc', // eslintrc | flat
 
-  styleGuide = 'default', // default | airbnb | typescript
-  hasTypeScript = false, // js | ts
+  filePatterns = [], // flat format only - e.g. '**/*.vue', '**/*.js', etc.
+
+  styleGuide = 'default', // default | airbnb | standard
+  hasTypeScript = false, // true | false
   needsPrettier = false, // true | false
 
   additionalConfig = {}, // e.g. Cypress, createAliasSetting for Airbnb, etc.
@@ -69,13 +72,18 @@ export default function createConfig ({
   addDependency('eslint')
   addDependency('eslint-plugin-vue')
 
-  if (styleGuide !== 'default' || hasTypeScript || needsPrettier) {
+  if (configFormat === 'flat') {
+    addDependency('@eslint/eslintrc')
+    addDependency('@eslint/js')
+  } else if (styleGuide !== 'default' || hasTypeScript || needsPrettier) {
     addDependency('@rushstack/eslint-patch')
   }
 
   const language = hasTypeScript ? 'typescript' : 'javascript'
 
-  const eslintConfig = {
+  const flatConfigExtends = []
+  const flatConfigImports = []
+  const eslintrcConfig = {
     root: true,
     extends: [
       vueVersion.startsWith('2')
@@ -85,49 +93,77 @@ export default function createConfig ({
   }
   const addDependencyAndExtend = (name) => {
     addDependency(name)
-    eslintConfig.extends.push(name)
+    eslintrcConfig.extends.push(name)
   }
 
   switch (`${styleGuide}-${language}`) {
     case 'default-javascript':
-      eslintConfig.extends.push('eslint:recommended')
+      eslintrcConfig.extends.push('eslint:recommended')
+      flatConfigImports.push(`import js from '@eslint/js'`)
+      flatConfigExtends.push('js.configs.recommended')
       break
     case 'default-typescript':
-      eslintConfig.extends.push('eslint:recommended')
+      eslintrcConfig.extends.push('eslint:recommended')
+      flatConfigImports.push(`import js from '@eslint/js'`)
+      flatConfigExtends.push('js.configs.recommended')
       addDependencyAndExtend('@vue/eslint-config-typescript')
+      flatConfigExtends.push(`...compat.extends('@vue/eslint-config-typescript')`)
       break
     case 'airbnb-javascript':
     case 'standard-javascript':
       addDependencyAndExtend(`@vue/eslint-config-${styleGuide}`)
+      flatConfigExtends.push(`...compat.extends('@vue/eslint-config-${styleGuide}')`)
       break
     case 'airbnb-typescript':
     case 'standard-typescript':
       addDependencyAndExtend(`@vue/eslint-config-${styleGuide}-with-typescript`)
+      flatConfigExtends.push(`...compat.extends('@vue/eslint-config-${styleGuide}-with-typescript')`)
       break
     default:
       throw new Error(`unexpected combination of styleGuide and language: ${styleGuide}-${language}`)
   }
 
+  flatConfigImports.push(`import pluginVue from 'eslint-plugin-vue'`)
+  flatConfigExtends.push(
+    vueVersion.startsWith('2')
+      ? `...pluginVue.configs['flat/vue2-essential']`
+      : `...pluginVue.configs['flat/essential']`
+  )
+
   deepMerge(pkg.devDependencies, additionalDependencies)
-  deepMerge(eslintConfig, additionalConfig)
+  deepMerge(eslintrcConfig, additionalConfig)
+
+  const flatConfigEntry = {
+    files: filePatterns
+  }
+  deepMerge(flatConfigEntry, additionalConfig)
 
   if (needsPrettier) {
     addDependency('prettier')
     addDependency('@vue/eslint-config-prettier')
-    eslintConfig.extends.push('@vue/eslint-config-prettier/skip-formatting')
+    eslintrcConfig.extends.push('@vue/eslint-config-prettier/skip-formatting')
+    flatConfigExtends.push(`...compat.extends('@vue/eslint-config-prettier/skip-formatting')`)
   }
 
+  const configFilename = configFormat === 'flat'
+    ? 'eslint.config.js'
+    : '.eslintrc.cjs'
   const files = {
-    '.eslintrc.cjs': ''
+    [configFilename]: ''
   }
 
   if (styleGuide === 'default') {
     // Both Airbnb & Standard have already set `env: node`
-    files['.eslintrc.cjs'] += '/* eslint-env node */\n'
+    if (configFormat === 'eslintrc') {
+      files['.eslintrc.cjs'] += '/* eslint-env node */\n'
+    }
 
     // Both Airbnb & Standard have already set `ecmaVersion`
     // The default in eslint-plugin-vue is 2020, which doesn't support top-level await
-    eslintConfig.parserOptions = {
+    eslintrcConfig.parserOptions = {
+      ecmaVersion: 'latest'
+    }
+    flatConfigEntry.languageOptions = {
       ecmaVersion: 'latest'
     }
   }
@@ -136,7 +172,33 @@ export default function createConfig ({
     files['.eslintrc.cjs'] += "require('@rushstack/eslint-patch/modern-module-resolution')\n\n"
   }
 
-  files['.eslintrc.cjs'] += `module.exports = ${stringifyJS(eslintConfig, styleGuide)}\n`
+  // eslint.config.js | .eslintrc.cjs
+  if (configFormat === 'flat') {
+    files['eslint.config.js'] += "import path from 'node:path'\n"
+    files['eslint.config.js'] += "import { fileURLToPath } from 'node:url'\n\n"
+
+    flatConfigImports.forEach((pkgImport) => {
+      files['eslint.config.js'] += `${pkgImport}\n`
+    })
+    files['eslint.config.js'] += '\n'
+
+    // neccesary for compatibility until all packages support flat config
+    files['eslint.config.js'] += 'const __filename = fileURLToPath(import.meta.url)\n'
+    files['eslint.config.js'] += 'const __dirname = path.dirname(__filename)\n'
+    files['eslint.config.js'] += 'const compat = new FlatCompat({\n'
+    files['eslint.config.js'] += '  baseDirectory: __dirname\n'
+    files['eslint.config.js'] += '})\n\n'
+    
+    files['eslint.config.js'] += 'export default [\n'
+    flatConfigExtends.forEach((usage) => {
+      files['eslint.config.js'] += `  ${usage},\n`
+    })
+
+    const [, ...keep] = stringifyJS([flatConfigEntry], styleGuide).split('{')
+    files['eslint.config.js'] += `  {${keep.join('{')}\n`
+  } else {
+    files['.eslintrc.cjs'] += `module.exports = ${stringifyJS(eslintrcConfig, styleGuide)}\n`
+  }
 
   // .editorconfig & .prettierrc.json
   if (editorconfigs[styleGuide]) {
