@@ -8,7 +8,7 @@ import versionMap from './versionMap.cjs'
 const CREATE_ALIAS_SETTING_PLACEHOLDER = 'CREATE_ALIAS_SETTING_PLACEHOLDER'
 export { CREATE_ALIAS_SETTING_PLACEHOLDER }
 
-function stringifyJS (value, styleGuide) {
+function stringifyJS (value, styleGuide, configFormat) {
   // eslint-disable-next-line no-shadow
   const result = stringify(value, (val, indent, stringify, key) => {
     if (key === 'CREATE_ALIAS_SETTING_PLACEHOLDER') {
@@ -17,6 +17,10 @@ function stringifyJS (value, styleGuide) {
 
     return stringify(val)
   }, 2)
+
+  if (configFormat === 'flat') {
+    return result.replace('CREATE_ALIAS_SETTING_PLACEHOLDER: ', '...createAliasSetting')
+  }
 
   return result.replace(
     'CREATE_ALIAS_SETTING_PLACEHOLDER: ',
@@ -72,17 +76,15 @@ export default function createConfig ({
   addDependency('eslint')
   addDependency('eslint-plugin-vue')
 
-  if (configFormat === 'flat') {
-    addDependency('@eslint/eslintrc')
-    addDependency('@eslint/js')
-  } else if (styleGuide !== 'default' || hasTypeScript || needsPrettier) {
-    addDependency('@rushstack/eslint-patch')
+  if (
+    configFormat === "eslintrc" &&
+    (styleGuide !== "default" || hasTypeScript || needsPrettier)
+  ) {
+    addDependency("@rushstack/eslint-patch");
   }
 
   const language = hasTypeScript ? 'typescript' : 'javascript'
 
-  const flatConfigExtends = []
-  const flatConfigImports = []
   const eslintrcConfig = {
     root: true,
     extends: [
@@ -96,6 +98,20 @@ export default function createConfig ({
     eslintrcConfig.extends.push(name)
   }
 
+  let needsFlatCompat = false
+  const flatConfigExtends = []
+  const flatConfigImports = []
+  flatConfigImports.push(`import pluginVue from 'eslint-plugin-vue'`)
+  flatConfigExtends.push(
+    vueVersion.startsWith('2')
+      ? `...pluginVue.configs['flat/vue2-essential']`
+      : `...pluginVue.configs['flat/essential']`
+  )
+
+  if (configFormat === 'flat' && styleGuide === 'default') {
+    addDependency('@eslint/js')
+  }
+
   switch (`${styleGuide}-${language}`) {
     case 'default-javascript':
       eslintrcConfig.extends.push('eslint:recommended')
@@ -107,41 +123,53 @@ export default function createConfig ({
       flatConfigImports.push(`import js from '@eslint/js'`)
       flatConfigExtends.push('js.configs.recommended')
       addDependencyAndExtend('@vue/eslint-config-typescript')
+      needsFlatCompat = true
       flatConfigExtends.push(`...compat.extends('@vue/eslint-config-typescript')`)
       break
     case 'airbnb-javascript':
     case 'standard-javascript':
       addDependencyAndExtend(`@vue/eslint-config-${styleGuide}`)
+      needsFlatCompat = true
       flatConfigExtends.push(`...compat.extends('@vue/eslint-config-${styleGuide}')`)
       break
     case 'airbnb-typescript':
     case 'standard-typescript':
       addDependencyAndExtend(`@vue/eslint-config-${styleGuide}-with-typescript`)
+      needsFlatCompat = true
       flatConfigExtends.push(`...compat.extends('@vue/eslint-config-${styleGuide}-with-typescript')`)
       break
     default:
       throw new Error(`unexpected combination of styleGuide and language: ${styleGuide}-${language}`)
   }
 
-  flatConfigImports.push(`import pluginVue from 'eslint-plugin-vue'`)
-  flatConfigExtends.push(
-    vueVersion.startsWith('2')
-      ? `...pluginVue.configs['flat/vue2-essential']`
-      : `...pluginVue.configs['flat/essential']`
-  )
-
   deepMerge(pkg.devDependencies, additionalDependencies)
   deepMerge(eslintrcConfig, additionalConfig)
+
+  if (additionalConfig?.extends) {
+    needsFlatCompat = true
+    additionalConfig.extends.forEach((pkgName) => {
+      flatConfigExtends.push(`...compat.extends('${pkgName}')`)
+    })
+  }
 
   const flatConfigEntry = {
     files: filePatterns
   }
-  deepMerge(flatConfigEntry, additionalConfig)
+  if (additionalConfig?.settings?.[CREATE_ALIAS_SETTING_PLACEHOLDER]) {
+    flatConfigImports.push(
+      `import createAliasSetting from '@vue/eslint-config-${styleGuide}/createAliasSetting'`
+    )
+    flatConfigEntry.settings = {
+      [CREATE_ALIAS_SETTING_PLACEHOLDER]: 
+        additionalConfig.settings[CREATE_ALIAS_SETTING_PLACEHOLDER]
+    }
+  }
 
   if (needsPrettier) {
     addDependency('prettier')
     addDependency('@vue/eslint-config-prettier')
     eslintrcConfig.extends.push('@vue/eslint-config-prettier/skip-formatting')
+    needsFlatCompat = true
     flatConfigExtends.push(`...compat.extends('@vue/eslint-config-prettier/skip-formatting')`)
   }
 
@@ -174,27 +202,38 @@ export default function createConfig ({
 
   // eslint.config.js | .eslintrc.cjs
   if (configFormat === 'flat') {
-    files['eslint.config.js'] += "import path from 'node:path'\n"
-    files['eslint.config.js'] += "import { fileURLToPath } from 'node:url'\n\n"
+    if (needsFlatCompat) {
+      files['eslint.config.js'] += "import path from 'node:path'\n"
+      files['eslint.config.js'] += "import { fileURLToPath } from 'node:url'\n\n"
 
+      addDependency('@eslint/eslintrc')
+      files['eslint.config.js'] += "import { FlatCompat } from '@eslint/eslintrc'\n"
+    }
+
+    // imports
     flatConfigImports.forEach((pkgImport) => {
       files['eslint.config.js'] += `${pkgImport}\n`
     })
     files['eslint.config.js'] += '\n'
 
     // neccesary for compatibility until all packages support flat config
-    files['eslint.config.js'] += 'const __filename = fileURLToPath(import.meta.url)\n'
-    files['eslint.config.js'] += 'const __dirname = path.dirname(__filename)\n'
-    files['eslint.config.js'] += 'const compat = new FlatCompat({\n'
-    files['eslint.config.js'] += '  baseDirectory: __dirname\n'
-    files['eslint.config.js'] += '})\n\n'
+    if (needsFlatCompat) {
+      files['eslint.config.js'] += 'const __filename = fileURLToPath(import.meta.url)\n'
+      files['eslint.config.js'] += 'const __dirname = path.dirname(__filename)\n'
+      files['eslint.config.js'] += 'const compat = new FlatCompat({\n'
+      files['eslint.config.js'] += '  baseDirectory: __dirname'
+      if (pkg.devDependencies['@vue/eslint-config-typescript']) {
+        files['eslint.config.js'] += ',\n  recommendedConfig: js.configs.recommended'
+      }
+      files['eslint.config.js'] += '\n})\n\n'
+    }
     
     files['eslint.config.js'] += 'export default [\n'
     flatConfigExtends.forEach((usage) => {
       files['eslint.config.js'] += `  ${usage},\n`
     })
 
-    const [, ...keep] = stringifyJS([flatConfigEntry], styleGuide).split('{')
+    const [, ...keep] = stringifyJS([flatConfigEntry], styleGuide, "flat").split('{')
     files['eslint.config.js'] += `  {${keep.join('{')}\n`
   } else {
     files['.eslintrc.cjs'] += `module.exports = ${stringifyJS(eslintrcConfig, styleGuide)}\n`
