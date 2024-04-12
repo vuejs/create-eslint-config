@@ -42,14 +42,19 @@ const indent = inferIndent(rawPkgJson)
 const pkg = JSON.parse(rawPkgJson)
 
 // 1. check for existing config files
-// `.eslintrc.*`, `eslintConfig` in `package.json`
+// `.eslintrc.*`, `eslint.config.*` and `eslintConfig` in `package.json`
 // ask if wanna overwrite?
-
-// https://eslint.org/docs/latest/user-guide/configuring/configuration-files#configuration-file-formats
-// The experimental `eslint.config.js` isn't supported yet
-const eslintConfigFormats = ['js', 'cjs', 'yaml', 'yml', 'json']
-for (const fmt of eslintConfigFormats) {
-  const configFileName = `.eslintrc.${fmt}`
+const eslintConfigFormats = [
+  '.eslintrc.js',
+  '.eslintrc.cjs',
+  '.eslintrc.yaml',
+  '.eslintrc.yml',
+  '.eslintrc.json',
+  'eslint.config.js',
+  'eslint.config.mjs',
+  'eslint.config.cjs'
+]
+for (const configFileName of eslintConfigFormats) {
   const fullConfigPath = path.resolve(cwd, configFileName)
   if (existsSync(fullConfigPath)) {
     const { shouldRemove } = await prompt({
@@ -88,7 +93,39 @@ if (pkg.eslintConfig) {
   }
 }
 
-// 2. Check Vue
+// 2. Config format
+let configFormat
+try { 
+  const eslintVersion = requireInCwd('eslint/package.json').version
+  console.info(dim(`Detected ESLint version: ${eslintVersion}`))
+  const [major, minor] = eslintVersion.split('.')
+  if (parseInt(major) >= 9) {
+    configFormat = 'flat'
+  } else if (parseInt(major) === 8 && parseInt(minor) >= 57) {
+    throw eslintVersion
+  } else {
+    configFormat = 'eslintrc'
+  }
+} catch (e) {
+  const anwsers = await prompt({
+    type: 'select',
+    name: 'configFormat',
+    message: 'Which configuration file format should be used?',
+    choices: [
+      {
+        name: 'flat',
+        message: 'eslint.config.js (a.k.a. Flat Config, the new default)'
+      },
+      {
+        name: 'eslintrc',
+        message: `.eslintrc.cjs (deprecated with ESLint v9.0.0)`
+      },
+    ]
+  })
+  configFormat = anwsers.configFormat
+}
+
+// 3. Check Vue
 // Not detected? Choose from Vue 2 or 3
 // TODO: better support for 2.7 and vue-demi
 let vueVersion
@@ -108,7 +145,7 @@ try {
   vueVersion = anwsers.vueVersion
 }
 
-// 3. Choose a style guide
+// 4. Choose a style guide
 // - Error Prevention (ESLint Recommended)
 // - Standard
 // - Airbnb
@@ -132,10 +169,10 @@ const { styleGuide } = await prompt({
   ]
 })
 
-// 4. Check TypeScript
-// 4.1 Allow JS?
-// 4.2 Allow JS in Vue?
-// 4.3 Allow JSX (TSX, if answered no in 4.1) in Vue?
+// 5. Check TypeScript
+// 5.1 Allow JS?
+// 5.2 Allow JS in Vue?
+// 5.3 Allow JSX (TSX, if answered no in 5.1) in Vue?
 let hasTypeScript = false
 const additionalConfig = {}
 try {
@@ -200,7 +237,7 @@ if (hasTypeScript && styleGuide !== 'default') {
   }
 }
 
-// 5. If Airbnb && !TypeScript
+// 6. If Airbnb && !TypeScript
 // Does your project use any path aliases?
 // Show [snippet prompts](https://github.com/enquirer/enquirer#snippet-prompt) for the user to input aliases
 if (styleGuide === 'airbnb' && !hasTypeScript) {
@@ -255,7 +292,7 @@ if (styleGuide === 'airbnb' && !hasTypeScript) {
   }
 }
 
-// 6. Do you need Prettier to format your codebase?
+// 7. Do you need Prettier to format your codebase?
 const { needsPrettier } = await prompt({
   type: 'toggle',
   disabled: 'No',
@@ -266,6 +303,8 @@ const { needsPrettier } = await prompt({
 
 const { pkg: pkgToExtend, files } = createConfig({
   vueVersion,
+  configFormat,
+
   styleGuide,
   hasTypeScript,
   needsPrettier,
@@ -291,6 +330,8 @@ for (const [name, content] of Object.entries(files)) {
   writeFileSync(fullPath, content, 'utf-8')
 }
 
+const configFilename = configFormat === 'flat' ? 'eslint.config.js' : '.eslintrc.cjs'
+
 // Prompt: Run `npm install` or `yarn` or `pnpm install`
 const userAgent = process.env.npm_config_user_agent ?? ''
 const packageManager = /pnpm/.test(userAgent) ? 'pnpm' : /yarn/.test(userAgent) ? 'yarn' : 'npm'
@@ -300,7 +341,7 @@ const lintCommand = packageManager === 'npm' ? 'npm run lint' : `${packageManage
 
 console.info(
   '\n' +
-  `${bold(yellow('package.json'))} and ${bold(blue('.eslintrc.cjs'))} have been updated.\n` +
+  `${bold(yellow('package.json'))} and ${bold(blue(configFilename))} have been updated.\n` +
   `Now please run ${bold(green(installCommand))} to re-install the dependencies.\n` +
   `Then you can run ${bold(green(lintCommand))} to lint your files.`
 )
