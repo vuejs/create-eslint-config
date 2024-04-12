@@ -58,8 +58,6 @@ export default function createConfig ({
   vueVersion = '3.x', // '2.x' | '3.x' (TODO: 2.7 / vue-demi)
   configFormat = 'eslintrc', // eslintrc | flat
 
-  filePatterns = [], // flat format only - e.g. '**/*.vue', '**/*.js', etc.
-
   styleGuide = 'default', // default | airbnb | standard
   hasTypeScript = false, // true | false
   needsPrettier = false, // true | false
@@ -153,7 +151,9 @@ export default function createConfig ({
   }
 
   const flatConfigEntry = {
-    files: filePatterns
+    files: language === 'javascript'
+      ? ['**/*.vue','**/*.js','**/*.jsx','**/*.cjs','**/*.mjs']
+      : ['**/*.vue','**/*.js','**/*.jsx','**/*.cjs','**/*.mjs','**/*.ts','**/*.tsx','**/*.cts','**/*.mts']
   }
   if (additionalConfig?.settings?.[CREATE_ALIAS_SETTING_PLACEHOLDER]) {
     flatConfigImports.push(
