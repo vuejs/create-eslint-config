@@ -33,9 +33,15 @@ importers:
       eslint:
         specifier: ^9.13.0
         version: 9.13.0
+      eslint-plugin-oxlint:
+        specifier: ^0.10.1
+        version: 0.10.1
       eslint-plugin-vue:
         specifier: ^9.29.1
         version: 9.29.1(eslint@9.13.0)
+      oxlint:
+        specifier: ^0.10.2
+        version: 0.10.2
       prettier:
         specifier: ^3.3.3
         version: 3.3.3
@@ -106,6 +112,46 @@ packages:
   '@nodelib/fs.walk@1.2.8':
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
+
+  '@oxlint/darwin-arm64@0.10.2':
+    resolution: {integrity: sha512-qFUOPUAu5Z8d/RUYTWKS5rekE5R9M4FyfFn2DbQyH8wg/ufLaYKpquzFKeFPvwNs0NU9B7Iro28Ty+YQCdhuxA==}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@oxlint/darwin-x64@0.10.2':
+    resolution: {integrity: sha512-v4VzIwCrB4jCkejnj9bjP0o+CjxMF1j6GltQQQQry2ySDFTNV9Etu6mvi6990mhh+bND4f9VyJ/KbRl+RZBPJA==}
+    cpu: [x64]
+    os: [darwin]
+
+  '@oxlint/linux-arm64-gnu@0.10.2':
+    resolution: {integrity: sha512-7ACUw/H3a9EntQ1fK9K0V3Sqk9y2dD0lvNVo9iWtWL76OAJ2RlGuMTNROBMd/5mac79/zXJu4mlzd3cUeDa9mA==}
+    cpu: [arm64]
+    os: [linux]
+
+  '@oxlint/linux-arm64-musl@0.10.2':
+    resolution: {integrity: sha512-FmTXpCFIIIxu516bRHbFb3FNKgwj2zIUeSx4Onklnlea9GgZt/QC9DS5hT06psAkjcWrvGV/LxFWs62qzO8xkA==}
+    cpu: [arm64]
+    os: [linux]
+
+  '@oxlint/linux-x64-gnu@0.10.2':
+    resolution: {integrity: sha512-NAJYpgivYM7EGqSTekjt6yeuVmqp8KSgaEcAdhRlEryYfoG67I1S39L62lpVwVzleNPMu9CUyBrlz5r+g2SSig==}
+    cpu: [x64]
+    os: [linux]
+
+  '@oxlint/linux-x64-musl@0.10.2':
+    resolution: {integrity: sha512-e4N0m8pz+CeL2tA0jh4pGk3BdMJbVgIEPlbOjQGk8daY10dVCzA1yWdkkzVh1d3aAOHo3c9mOXYq0ZQjyZfn1g==}
+    cpu: [x64]
+    os: [linux]
+
+  '@oxlint/win32-arm64@0.10.2':
+    resolution: {integrity: sha512-LusTVOzTjztkEdXjQM8NqazyXE95yknpRl9DUJA8Ak6UXifEXxw9DbUNzrwaVfp/pkk0KAMab76JkPgwfmyavA==}
+    cpu: [arm64]
+    os: [win32]
+
+  '@oxlint/win32-x64@0.10.2':
+    resolution: {integrity: sha512-/f4heyBoG433OT3siQapyQ9LxIsZGHIQOtO/oWSzl9SAHOQ3MLA+8XOozatT+GWyUB9Y6q4RwJuNbxpdzjOkuA==}
+    cpu: [x64]
+    os: [win32]
 
   '@pkgr/core@0.1.1':
     resolution: {integrity: sha512-cq8o4cWH0ibXh9VGi5P20Tu9XF/0fFXl9EUinr9QfTM7a7p0oTA4iJRCQWppXR1Pg8dSM0UCItCkPwsk9qWWYA==}
@@ -298,6 +344,9 @@ packages:
     hasBin: true
     peerDependencies:
       eslint: '>=7.0.0'
+
+  eslint-plugin-oxlint@0.10.1:
+    resolution: {integrity: sha512-bo59mtO2ff1TqrKOOkHy515j+1zrjqtfoKKxuQ7p8vS+AUGKzIm8HnK2+ZKZ8W13xULfFA6gfUxduJ/rRjFUUg==}
 
   eslint-plugin-prettier@5.2.1:
     resolution: {integrity: sha512-gH3iR3g4JfF+yYPaJYkN7jEl9QbweL/YfkoRlNnuIEHEz1vHVlCmWOS+eGGiRuzHQXdJFCOTxRgvju9b8VUmrw==}
@@ -530,6 +579,11 @@ packages:
     resolution: {integrity: sha512-6IpQ7mKUxRcZNLIObR0hz7lxsapSSIYNZJwXPGeF0mTVqGKFIXj1DQcMoT22S3ROcLyY/rz0PWaWZ9ayWmad9g==}
     engines: {node: '>= 0.8.0'}
 
+  oxlint@0.10.2:
+    resolution: {integrity: sha512-/8AU6/4e5UwcF0UMM4U3azFJ04unWZMR6Q+o6efXZaLz7uk0+3FO+JU8zX8XbMOaLDQs/FnQMhlPGvsH1CUiyA==}
+    engines: {node: '>=14.*'}
+    hasBin: true
+
   p-limit@3.1.0:
     resolution: {integrity: sha512-TYOanM3wGwNGsZN2cVTYPArw454xnXj5qmWF1bEoAc4+cU/ol7GVh7odevjp1FNHduHc3KZMcFduxU5Xc6uJRQ==}
     engines: {node: '>=10'}
@@ -752,6 +806,30 @@ snapshots:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.17.1
 
+  '@oxlint/darwin-arm64@0.10.2':
+    optional: true
+
+  '@oxlint/darwin-x64@0.10.2':
+    optional: true
+
+  '@oxlint/linux-arm64-gnu@0.10.2':
+    optional: true
+
+  '@oxlint/linux-arm64-musl@0.10.2':
+    optional: true
+
+  '@oxlint/linux-x64-gnu@0.10.2':
+    optional: true
+
+  '@oxlint/linux-x64-musl@0.10.2':
+    optional: true
+
+  '@oxlint/win32-arm64@0.10.2':
+    optional: true
+
+  '@oxlint/win32-x64@0.10.2':
+    optional: true
+
   '@pkgr/core@0.1.1': {}
 
   '@types/estree@1.0.6': {}
@@ -951,6 +1029,8 @@ snapshots:
   eslint-config-prettier@9.1.0(eslint@9.13.0):
     dependencies:
       eslint: 9.13.0
+
+  eslint-plugin-oxlint@0.10.1: {}
 
   eslint-plugin-prettier@5.2.1(eslint-config-prettier@9.1.0(eslint@9.13.0))(eslint@9.13.0)(prettier@3.3.3):
     dependencies:
@@ -1205,6 +1285,17 @@ snapshots:
       prelude-ls: 1.2.1
       type-check: 0.4.0
       word-wrap: 1.2.5
+
+  oxlint@0.10.2:
+    optionalDependencies:
+      '@oxlint/darwin-arm64': 0.10.2
+      '@oxlint/darwin-x64': 0.10.2
+      '@oxlint/linux-arm64-gnu': 0.10.2
+      '@oxlint/linux-arm64-musl': 0.10.2
+      '@oxlint/linux-x64-gnu': 0.10.2
+      '@oxlint/linux-x64-musl': 0.10.2
+      '@oxlint/win32-arm64': 0.10.2
+      '@oxlint/win32-x64': 0.10.2
 
   p-limit@3.1.0:
     dependencies:
