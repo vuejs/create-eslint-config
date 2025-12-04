@@ -50,6 +50,7 @@
     "globals": "^16.5.0",
     "jiti": "^2.6.1",
     "npm-run-all2": "^8.0.4",
+    "oxfmt": "^0.16.0",
     "oxlint": "~1.31.0",
     "prettier": "3.7.3",
     "typescript": "~5.9.0"
