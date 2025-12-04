@@ -12,8 +12,8 @@ const versionMap = thisPackage.devDependencies
  * @param {string} [options.styleGuide='default'] - The style guide to use (only 'default' is supported for now)
  * @param {boolean} [options.hasTypeScript=false] - Whether the project uses TypeScript
  * @param {boolean} [options.needsPrettier=false] - Whether to include Prettier integration
- * @param {boolean} [options.needsOxlint=false] - Whether to include Oxlint (faster linter to compliment ESLint)
- * @param {boolean} [options.needsOxfmt=false] - Whether to include Oxfmt (faster formatter to compliment Prettier, experimental)
+ * @param {boolean} [options.needsOxlint=false] - Whether to include Oxlint (faster linter to complement ESLint)
+ * @param {boolean} [options.needsOxfmt=false] - Whether to include Oxfmt (faster formatter to complement Prettier, experimental)
  * @param {Array<{devDependencies?: object, beforeVuePlugin?: Array<{importer: string, content: string}>, afterVuePlugin?: Array<{importer: string, content: string}>}>} [options.additionalConfigs=[]] - Additional configurations to merge
  * @returns {{pkg: {devDependencies: object, scripts: object}, files: object}} An object containing package.json modifications and generated config files
  */
@@ -107,7 +107,7 @@ export default function createConfig({
 
   // TBH they don't share dependencies so the plugin can be added with or without oxlint/oxfmt.
   // But I don't feel like pushing this as the default option right now.
-  // If the user shows interest in oxlint/oxfmt, we can safely assume they want this plugin too.
+  // If the user shows interest in oxlint/oxfmt, we can safely assume they wants this plugin too.
   if (needsPrettier && (needsOxlint || needsOxfmt)) {
     additionalConfigs.push({
       devDependencies: pickDependencies(['@prettier/plugin-oxc']),
@@ -192,9 +192,9 @@ const isObject = val => val && typeof val === 'object'
 const mergeArrayWithDedupe = (a, b) => Array.from(new Set([...a, ...b]))
 
 /**
- * Recursively merge the content of the new object to the existing one
- * @param {object} target the existing object
- * @param {object} obj the new object
+ * Recursively merge the content of the new object to the existing one.
+ * @param {object} target - The existing object
+ * @param {object} obj - The new object
  */
 export function deepMerge(target, obj) {
   for (const key of Object.keys(obj)) {
