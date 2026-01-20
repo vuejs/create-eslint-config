@@ -47,7 +47,7 @@
     "eslint": "^9.39.2",
     "eslint-plugin-oxlint": "~1.33.0",
     "eslint-plugin-vue": "~10.6.2",
-    "globals": "^16.5.0",
+    "globals": "^17.0.0",
     "jiti": "^2.6.1",
     "npm-run-all2": "^8.0.4",
     "oxfmt": "^0.18.0",
